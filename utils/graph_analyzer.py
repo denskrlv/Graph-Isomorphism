@@ -1,6 +1,8 @@
 import hashlib
 from collections import Counter
 from framework.graph import *
+from framework.graph_io import *
+
 
 
 class GraphAnalyzer(object):
@@ -70,32 +72,19 @@ class GraphAnalyzer(object):
         # return identical_graphs
 
 
-    def count_isomorphism(self, G, *args, **kwargs):
-        used_vertices_D = kwargs.get('D', None)
-        used_vertices_I = kwargs.get("I", None)
+    def count_isomorphism(self, G, D, I):
         colours = {}
-        for v in G.vertices:
-            v.label = "1"
-        if used_vertices_D is not None and used_vertices_I is not None:
-            if len(used_vertices_D) == 1 and len(used_vertices_I) == 1:
-                x = used_vertices_D[0]
-                y = used_vertices_I[0]
-                x.label = "2"
-                y.label = "2"
-                colours["1"] = [v for v in G.vertices if v.label == "1"]
-                colours["2"] = [x, y]
+        colours["1"] = [v for v in G.vertices if v.label == "1"]
+        for v1 in D:
+            if v1.label not in colours:
+                colours[v1.label] = [v1]
             else:
-                for i in range(len(used_vertices_I)):
-                    x = used_vertices_D[i]
-                    y = used_vertices_I[i]
-                    x.label = str(i + 2)
-                    y.label = str(i + 2)
-                    colours[str(i + 2)] = [x, y]
-                colours["1"] = [v for v in G.vertices if v.label == "1"]
-        else:
-            colours["1"] = G.vertices
-            used_vertices_D = []
-            used_vertices_I = []
+                colours[v1.label].append(v1)
+        for v2 in I:
+            if v2.label not in colours:
+                colours[v2.label] = [v2]
+            else:
+                colours[v2.label].append(v2)
         print("Before: " + str(G))
         result = self.weisfeiler_lehman(G, colours)
         print("After: " + str(result))
@@ -108,41 +97,50 @@ class GraphAnalyzer(object):
         if 2 in result:
             colouring = list(result[0].values())[0]
             colour_classes = Counter(colouring)
+            print("colours" + str(colour_classes))
             graph_numbers = list(result[0].keys())
             g_num_left = graph_numbers[0]
             g_num_right = graph_numbers[1]
-            colour = ""
+            with open('graph' + str(g_num_left) + 'x' + str(g_num_right) + '.dot', 'w') as gg:
+                write_dot(G, gg)
+            num = 0
             for colour_class in colour_classes:
                 if colour_classes[colour_class] >= 2:
                     print("color class chosen: " + colour_class)
-                    colour = colour_class
+                    for x in G.vertices:
+                        if x.g_num == g_num_left and x.label == colour_class and x not in D:
+                            print("x selected: " + str(x.label))
+                            for y in G.vertices:
+                                if y.g_num == g_num_right and y.label == colour_class and y not in I:
+                                    print("Currently running y: " + str(y))
+                                    for vertex in G.vertices:
+                                        vertex.label = "1"
+                                    for i in range(len(D)):
+                                        D[i].label = str(i+2)
+                                        I[i].label = str(i+2)
+                                    x.label = str(len(D) + 2)
+                                    y.label = str(len(I) + 2)
+                                    with open('graph' + str(g_num_left) + 'x' + str(g_num_right) + '.dot', 'w') as gg:
+                                        write_dot(G, gg)
+                                    num = num + self.count_isomorphism(G, D + [x], I + [y])
+                                    print(num)
+                            break
                     break
+            return num
 
-            for x in G.vertices:
-                if x.g_num == g_num_left and x.label == colour and x.label not in used_vertices_D:
-                    used_vertices_D.append(x)
-                    print("x selected: " + str(x.label))
-                    num = 0
-                    for y in G.vertices:
-                        if y.g_num == g_num_right and y.label == colour and y not in used_vertices_I:
-                            used_vertices_I.append(y)
-                            print("Currently running y: " + str(y))
-                            num = num + self.count_isomorphism(G, D=used_vertices_D, I=used_vertices_I)
-                            print(num)
-                    return num
 
 
     def compare_graphs(self, G, graphs):
         colourings = set()
         identical = {}
         for key, value in graphs.items():
-            value_key = tuple(value)
+            value_key = tuple(sorted(value))
             colourings.add(value_key)
             if value_key in identical:
                 identical[value_key].append(key)
             else:
                 identical[value_key] = [key]
-        output = [group for group in identical.values() if len(group) > 1]
+        # output = [group for group in identical.values() if len(group) > 1]
         if len(colourings) == 2:
             return 0
         if len(colourings) == 1:

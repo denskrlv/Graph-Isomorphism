@@ -62,16 +62,20 @@ def benchmark(directory):
                 for j in range(i + 1, len(L[0])):
                     left_graph = L[0][i]
                     right_graph = L[0][j]
+                    D = []
+                    I = []
                     for v in left_graph.vertices:
                         v.g_num = i
+                        v.label = "1"
                     for v in right_graph.vertices:
                         v.g_num = j
+                        v.label = "1"
                     graph = left_graph + right_graph
                     start_time = time.time()
-                    count = g_analyzer.count_isomorphism(graph)
-                    if count == 1:
-                        print([i, j])
-                    print("Count: " + str(count))
+                    if i == 2 and j == 5:
+                        count = g_analyzer.count_isomorphism(graph, D, I)
+                        if count > 0:
+                            print(str([i, j]) + " " + str(count))
                     end_time = time.time()
                     elapsed_time = end_time - start_time
                     total_time += elapsed_time
