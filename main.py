@@ -35,14 +35,10 @@
 #
 # # TEST ZONE
 # # benchmark('test_graphs/CRefFriday2023')
-import time
 
-from framework.graph import *
-from framework.graph_io import *
 import os
 import time
-from utils.graph_analyzer import *
-g_analyzer = GraphAnalyzer()
+from framework.graph_analyzer import *
 
 
 def benchmark(directory):
@@ -73,14 +69,14 @@ def benchmark(directory):
                     graph = left_graph + right_graph
                     start_time = time.time()
                     if i == 2 and j == 5:
-                        count = g_analyzer.count_isomorphism(graph, D, I)
+                        count = count_isomorphism(graph, D, I)
                         if count > 0:
                             print(str([i, j]) + " " + str(count))
                     end_time = time.time()
                     elapsed_time = end_time - start_time
                     total_time += elapsed_time
-                    with open('graph' + str(i) + 'x' + str(j) + '.dot', 'w') as gg:
-                        write_dot(graph, gg)
+                    # with open('graph' + str(i) + 'x' + str(j) + '.dot', 'w') as gg:
+                    #     write_dot(graph, gg)
         # for r in result:
         #     if r[-1] == 1:
         #         print(r[:-1], "discrete")
@@ -89,4 +85,20 @@ def benchmark(directory):
         print(f"Elapsed time: {elapsed_time:.4f} seconds\n")
     print(f"Total time: {total_time:.4f} seconds\n")
 
-benchmark("graphs")
+
+benchmark("graphs/custom")
+
+# with open("graphs/basic/colorref_smallexample_4_7.grl") as f:
+#     L = load_graph(f, read_list=True)
+#     graph = Graph(False, 0)
+#     i = 0
+#     for g in L[0]:
+#         for v in g.vertices:
+#              v.g_num = i
+#         graph = graph + g
+#         i += 1
+#     start_time = time.time()
+#     colorized_graph = colorize(graph)
+#     end_time = time.time()
+#     elapsed_time = end_time - start_time
+#     print(f"Elapsed time: {elapsed_time:.4f} seconds\n")

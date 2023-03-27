@@ -334,26 +334,6 @@ class Graph(object):
             new_graph.add_edge(e)
         return new_graph
 
-    def __add__(self, other: "Graph") -> "Graph":
-        """
-        Make a disjoint union of two graphs.
-        :param other: Graph to add to `self'.
-        :return: New graph which is a disjoint union of `self' and `other'.
-        """
-        new_graph = Graph(False, 0)
-        all_vertices = []
-        all_vertices.extend(self.vertices)
-        all_vertices.extend(other.vertices)
-        for v in all_vertices:
-            v._graph = new_graph
-            new_graph.add_vertex(v)
-        all_edges = []
-        all_edges.extend(self.edges)
-        all_edges.extend(other.edges)
-        for e in all_edges:
-            new_graph.add_edge(e)
-        return new_graph
-
 
     # def __add__(self, other: "List") -> "Graph":
     #     """
