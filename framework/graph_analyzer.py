@@ -4,26 +4,24 @@ from collections import Counter
 from framework.graph_io import *
 
 
-def colorize(graph: Graph, colours: dict = None) -> Graph:
+def colourize(graph: Graph, reset: bool = True) -> Graph:
     """
     Colorizes the graph using Weisfeiler Lehman algorithm.
     :param graph: A graph that should be (re-)colorized
-    :param colours: A dictionary with the colours to use as a starting point.
-    If None, colorization will start from the beginning
+    :param reset: If True, the colours of the graph will be reset before colorization
     :return: The colorized graph
     """
 
-    colored_graph = deepcopy(graph)
+    coloured_graph = deepcopy(graph)  # can be slow for large graphs
+    colours = {}
 
-    if colours is None:
-        colours = {}
-        for v in colored_graph.vertices:
+    if reset:
+        for v in coloured_graph.vertices:
             v.label = "1"
-        colours["1"] = colored_graph.vertices
+        colours["1"] = coloured_graph.vertices
     else:
-        for key, value in colours.items():
-            for v in value:
-                v.label = key
+        for v in coloured_graph.vertices:
+            colours.setdefault(str(v.label), []).append(v)
 
     converged = False
     number_of_partitions = _check_partitions(colours)
@@ -40,7 +38,7 @@ def colorize(graph: Graph, colours: dict = None) -> Graph:
     if not converged:
         raise TimeoutError("Limit 1000 iterations exceeded! Colorization failed.")
 
-    return colored_graph
+    return coloured_graph
 
     # graphs = {}
     # for _, value in colours.items():
@@ -58,7 +56,7 @@ def colorize(graph: Graph, colours: dict = None) -> Graph:
     # return identical_graphs
 
 
-def check_discreteness(colours: dict):
+def check_discreteness(colours: dict) -> List:
     graphs = {}
     for _, value in colours.items():
         for v in value:
@@ -98,21 +96,21 @@ def _check_partitions(colours):
 def _update_dict(colours):
     colours_copy = colours.copy()
     for key, value in colours_copy.items():
-        if value == []:
+        if not value:
             del colours[key]
 
 
-def _get_compressed_label(V):
-    cl = V.label
+def _get_compressed_label(vertex):
+    cl = vertex.label
     neighbours = []
-    for n in V.neighbours:
+    for n in vertex.neighbours:
         neighbours.append(n.label)
     neighbours = sorted(neighbours)
     str_neighbours = cl.join(str(n) for n in neighbours)
     hash_cl = hashlib.sha256(str_neighbours.encode())
     hash_label = hash_cl.hexdigest()
     hash_label = hash_label[:8]
-    return (V, hash_label)
+    return vertex, hash_label
 
 
 def _step(colours):
@@ -157,7 +155,7 @@ def count_isomorphism(G: Graph, D: List, I: List) -> int:
         colours.setdefault(v2.label, []).append(v2)
 
     print("Before: " + str(G))
-    result = colorize(G, colours)
+    result = colourize(G, colours)
     print("After: " + str(result))
     if 0 in result:
         print("hello0")
