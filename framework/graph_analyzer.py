@@ -2,6 +2,7 @@ import hashlib
 from copy import deepcopy
 from collections import Counter
 from framework.graph_io import *
+from utils.utils import make_copy
 
 
 def colourize(graph: Graph, reset: bool = True) -> Graph:
@@ -12,7 +13,7 @@ def colourize(graph: Graph, reset: bool = True) -> Graph:
     :return: The colorized graph
     """
 
-    coloured_graph = deepcopy(graph)  # can be slow for large graphs
+    coloured_graph = graph  # FIXME: deepcopy(graph) fails for large graphs
     colours = {}
 
     if reset:
@@ -40,46 +41,42 @@ def colourize(graph: Graph, reset: bool = True) -> Graph:
 
     return coloured_graph
 
-    # graphs = {}
-    # for _, value in colours.items():
-    #     for v in value:
-    #         graphs.setdefault(v.g_num, []).append(v.label)
-    # identical_graphs = compare_graphs(graphs)
-    # return [graphs, identical_graphs]
 
-    # for ig in identical_graphs:
-    #     if len(set(graphs[ig[0]])) == len(graphs[ig[0]]):
-    #         ig.append(1)
-    #     else:
-    #         ig.append(0)
-    #
-    # return identical_graphs
-
-
-def check_discreteness(colours: dict) -> List:
+def find_discrete(graph: Graph) -> set:
+    """
+    Check which graphs are discrete.
+    :param graph: A graph (disjoint union of graphs) that should be checked
+    :return: A list of lists of graphs that are discrete
+    """
     graphs = {}
-    for _, value in colours.items():
-        for v in value:
-            graphs.setdefault(v.g_num, []).append(v.label)
+    for vertex in graph.vertices:
+        graphs.setdefault(vertex.g_num, []).append(vertex.label)
     identical_graphs = _find_identical(graphs)
+    # identical_graphs = compare_graphs(graphs)
     for ig in identical_graphs:
         if len(set(graphs[ig[0]])) == len(graphs[ig[0]]):
             ig.append(1)
         else:
             ig.append(0)
-    return identical_graphs
+    set_identical_graphs = set(tuple(row) for row in identical_graphs)  # easier to compare because the order not matter
+    return set_identical_graphs
 
 
-def _find_identical(graphs):
+def _find_identical(graphs: dict) -> List:
+    """
+    Find identical graphs in a dictionary of graphs.
+    :param graphs: A dictionary of graphs
+    :return: A list of lists of graphs that are identical
+    """
     identical = {}
     for key, value in graphs.items():
-        value_key = tuple(value)
+        value_key = tuple(sorted(value))
         if value_key in identical:
             identical[value_key].append(key)
         else:
             identical[value_key] = [key]
-    output = [group for group in identical.values() if len(group) > 1]
-    return output
+    identical_graphs = [group for group in identical.values() if len(group) > 1]
+    return identical_graphs
 
 
 def _map_values_with_colours(labels, curr_key, colours):
