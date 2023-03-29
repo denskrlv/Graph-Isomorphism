@@ -2,7 +2,7 @@ import hashlib
 from copy import deepcopy
 from collections import Counter
 from framework.graph_io import *
-from utils.utils import make_copy
+from utils.utils import fast_copy
 
 
 def colourize(graph: Graph, reset: bool = True) -> Graph:
@@ -13,7 +13,7 @@ def colourize(graph: Graph, reset: bool = True) -> Graph:
     :return: The colorized graph
     """
 
-    coloured_graph = graph  # FIXME: deepcopy(graph) fails for large graphs
+    coloured_graph = fast_copy(graph)
     colours = {}
 
     if reset:

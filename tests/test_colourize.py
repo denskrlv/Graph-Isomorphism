@@ -23,7 +23,7 @@ class TestColourize(unittest.TestCase):
 
     def test_colourize_deepcopy(self):
         """
-        Tests if the colorize function returns a new graph object and if the vertices and edges are new objects.
+        Tests if the colourize function returns a new graph object and if the vertices and edges are new objects.
         """
         coloured_graph = colourize(self.graph)
         assert coloured_graph is not self.graph
@@ -36,7 +36,7 @@ class TestColourize(unittest.TestCase):
 
     def test_colourize_empty(self):
         """
-        Tests if the colorize function returns a correctly colored graph.
+        Tests if the colourize function returns a correctly coloured graph.
         """
         coloured_graph = colourize(self.graph)
         assert len(coloured_graph.vertices) == 5
@@ -48,7 +48,7 @@ class TestColourize(unittest.TestCase):
 
     def test_colourize_nonempty(self):
         """
-        Tests if the colorize function returns different results when the graph is already colored.
+        Tests if the colourize function returns different results when the graph is already coloured.
         """
         coloured_graph_empty = colourize(self.graph)
         self.graph.vertices[0].label = "2"
