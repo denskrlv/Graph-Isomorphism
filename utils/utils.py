@@ -30,6 +30,7 @@ def fast_copy(graph: Graph) -> Graph:
     for i in range(len(graph.vertices)):
         graph_copy.vertices[i].label = graph.vertices[i].label
         graph_copy.vertices[i].g_num = graph.vertices[i].g_num
+        graph_copy.vertices[i].uid = graph.vertices[i].uid
     for j in range(len(graph.edges)):
         tail_index = graph.vertices.index(graph.edges[j].tail)
         head_index = graph.vertices.index(graph.edges[j].head)

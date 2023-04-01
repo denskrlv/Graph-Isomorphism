@@ -1,59 +1,16 @@
-# from framework.graph import *
-# from framework.graph_io import *
-# import os
-# import time
-# from utils.graph_analyzer import *
-#
-# g_analyzer = GraphAnalyzer()
-#
-#
-# def benchmark(directory):
-#     total_time = 0
-#     for filename in os.listdir(directory):
-#         print("Dataset:", directory + "/" + filename)
-#         with open(directory + "/" + filename) as f:
-#             L = load_graph(f, read_list=True)
-#             graph = Graph(False, 0)
-#             i = 0
-#             for g in L[0]:
-#                 for v in g.vertices:
-#                     v.g_num = i
-#                 graph = graph + g
-#                 i += 1
-#         start_time = time.time()
-#         result = g_analyzer.weisfeiler_lehman(graph)
-#         end_time = time.time()
-#         elapsed_time = end_time - start_time
-#         total_time += elapsed_time
-#         for r in result:
-#             if r[-1] == 1:
-#                 print(r[:-1], "discrete")
-#             else:
-#                 print(r[:-1])
-#         print(f"Elapsed time: {elapsed_time:.4f} seconds\n")
-#     print(f"Total time: {total_time:.4f} seconds\n")
-#
-# # TEST ZONE
-# # benchmark('test_graphs/CRefFriday2023')
-
 import os
 import time
 from framework.graph_analyzer import *
 
 
 def benchmark(directory):
-    total_time = 0
+    start = time.time()
     for filename in os.listdir(directory):
         print("Dataset:", directory + "/" + filename)
         with open(directory + "/" + filename) as f:
             L = load_graph(f, read_list=True)
-            graph = Graph(False, 0)
-            # i = 0
-            # for g in L[0]:
-            #     for v in g.vertices:
-            #         v.g_num = i
-            #     graph = graph + g
-            #     i += 1
+            start_time = time.time()
+            count = 0
             for i in range(len(L[0]) - 1):
                 for j in range(i + 1, len(L[0])):
                     left_graph = L[0][i]
@@ -63,42 +20,25 @@ def benchmark(directory):
                     for v in left_graph.vertices:
                         v.g_num = i
                         v.label = "1"
+                        v.set_uid(count)
+                        count += 1
                     for v in right_graph.vertices:
                         v.g_num = j
                         v.label = "1"
+                        v.set_uid(count)
+                        count += 1
                     graph = left_graph + right_graph
-                    start_time = time.time()
-                    if i == 2 and j == 5:
-                        count = count_isomorphism(graph, D, I)
-                        if count > 0:
-                            print(str([i, j]) + " " + str(count))
-                    end_time = time.time()
-                    elapsed_time = end_time - start_time
-                    total_time += elapsed_time
-                    # with open('graph' + str(i) + 'x' + str(j) + '.dot', 'w') as gg:
-                    #     write_dot(graph, gg)
-        # for r in result:
-        #     if r[-1] == 1:
-        #         print(r[:-1], "discrete")
-        #     else:
-        #         print(r[:-1])
-        print(f"Elapsed time: {elapsed_time:.4f} seconds\n")
-    print(f"Total time: {total_time:.4f} seconds\n")
+                    count = count_isomorphism(graph, D, I)
+                    if count > 0:
+                        print(str([i, j]) + " " + str(count))
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            print(f"Elapsed time: {elapsed_time:.3f} seconds\n")
+    end = time.time()
+    time_taken = end - start
+    minutes = int(time_taken / 60)
+    secs = time_taken % 60
+    print(f"Total time for all graphs: {minutes} minute(s) and {secs:.2f} seconds\n")
 
 
 benchmark("graphs/custom")
-
-# with open("graphs/basic/colorref_smallexample_4_7.grl") as f:
-#     L = load_graph(f, read_list=True)
-#     graph = Graph(False, 0)
-#     i = 0
-#     for g in L[0]:
-#         for v in g.vertices:
-#              v.g_num = i
-#         graph = graph + g
-#         i += 1
-#     start_time = time.time()
-#     colorized_graph = colorize(graph)
-#     end_time = time.time()
-#     elapsed_time = end_time - start_time
-#     print(f"Elapsed time: {elapsed_time:.4f} seconds\n")

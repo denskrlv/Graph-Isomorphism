@@ -5,17 +5,17 @@ from framework.graph_io import *
 from utils.utils import fast_copy
 
 
-def colourize(graph: Graph, reset: bool = True) -> Graph:
+def colourize(graph: Graph, reset: bool = True) -> List:
     """
     Colorizes the graph using Weisfeiler Lehman algorithm.
     :param graph: A graph that should be (re-)colorized
     :param reset: If True, the colours of the graph will be reset before colorization
     :return: The colorized graph
     """
-
     coloured_graph = fast_copy(graph)
     colours = {}
-
+    graphs = {}
+    # print("RESET STATUS: " + str(reset))
     if reset:
         for v in coloured_graph.vertices:
             v.label = "1"
@@ -31,7 +31,7 @@ def colourize(graph: Graph, reset: bool = True) -> Graph:
         _update_dict(colours)
         new_number_of_partitions = _check_partitions(colours)
         if new_number_of_partitions == number_of_partitions:
-            print("Colorized successfully! Iterations:", i)
+            # print("Colorized successfully! Iterations:", i)
             converged = True
             break
         else:
@@ -39,27 +39,37 @@ def colourize(graph: Graph, reset: bool = True) -> Graph:
     if not converged:
         raise TimeoutError("Limit 1000 iterations exceeded! Colorization failed.")
 
-    return coloured_graph
+    for v in coloured_graph.vertices:
+        try:
+            graphs[v.g_num].append(v.label)
+        except KeyError:
+            graphs[v.g_num] = [v.label]
+
+    identical_graphs = _find_identical(graphs)
+    if not identical_graphs:
+        result = [graphs, 0, coloured_graph]
+    else:
+        if find_discrete(identical_graphs, graphs):
+            result = [graphs, 1, coloured_graph]
+        else:
+            result = [graphs, 2, coloured_graph]
+    return result
 
 
-def find_discrete(graph: Graph) -> set:
+def find_discrete(identical_graphs: List, graphs: dict) -> bool:
     """
     Check which graphs are discrete.
-    :param graph: A graph (disjoint union of graphs) that should be checked
+    :param graphs: A graph (disjoint union of graphs) that should be checked
     :return: A list of lists of graphs that are discrete
     """
-    graphs = {}
-    for vertex in graph.vertices:
-        graphs.setdefault(vertex.g_num, []).append(vertex.label)
-    identical_graphs = _find_identical(graphs)
-    # identical_graphs = compare_graphs(graphs)
     for ig in identical_graphs:
         if len(set(graphs[ig[0]])) == len(graphs[ig[0]]):
-            ig.append(1)
+            return True
         else:
-            ig.append(0)
-    set_identical_graphs = set(tuple(row) for row in identical_graphs)  # easier to compare because the order not matter
-    return set_identical_graphs
+            return False
+    # set_identical_graphs = set(tuple(row) for row in identical_graphs)  # easier to compare because the order not matter
+    # print("set: " + str(set_identical_graphs))
+    return False
 
 
 def _find_identical(graphs: dict) -> List:
@@ -114,7 +124,7 @@ def _get_compressed_label(vertex):
     not_hashed_label = cl + str_neighbours
     hash_cl = hashlib.sha256(not_hashed_label.encode())
     hash_label = hash_cl.hexdigest()
-    hash_label = hash_label[:8]
+    hash_label = hash_label[:16]
     return vertex, hash_label
 
 
@@ -157,51 +167,49 @@ def compare_graphs(graphs):
 
 
 def count_isomorphism(G: Graph, D: List, I: List) -> int:
-    colours = {"1": [v for v in G.vertices if v.label == "1"]}
-    for v1 in D:
-        colours.setdefault(v1.label, []).append(v1)
-    for v2 in I:
-        colours.setdefault(v2.label, []).append(v2)
-
-    print("Before: " + str(G))
-    result = colourize(G, colours)
-    print("After: " + str(result))
+    # colours = {"1": [v for v in G.vertices if v.label == "1"]}
+    # for v1 in D:
+    #     colours.setdefault(v1.label, []).append(v1)
+    # for v2 in I:
+    #     colours.setdefault(v2.label, []).append(v2)
+    # print("Before: " + str(G))
+    if len(D) == 0:
+        result = colourize(G)
+    else:
+        result = colourize(G, reset=False)
+    # print("After: " + str(result))
     if 0 in result:
-        print("hello0")
         return 0
     if 1 in result:
-        print("hello1")
         return 1
     if 2 in result:
+        coloured_graph = result[2]
         colouring = list(result[0].values())[0]
         colour_classes = Counter(colouring)
-        print("colours" + str(colour_classes))
-        graph_numbers = list(result[0].keys())
-        g_num_left = graph_numbers[0]
-        g_num_right = graph_numbers[1]
-        # with open('graph' + str(g_num_left) + 'x' + str(g_num_right) + '.dot', 'w') as gg:
-        #     write_dot(G, gg)
+        # print("colours" + str(colour_classes))
         num = 0
+        dup_coloured_nodes = []
         for colour_class in colour_classes:
             if colour_classes[colour_class] >= 2:
-                print("color class chosen: " + colour_class)
-                for x in G.vertices:
-                    if x.g_num == g_num_left and x.label == colour_class and x not in D:
-                        print("x selected: " + str(x.label))
-                        for y in G.vertices:
-                            if y.g_num == g_num_right and y.label == colour_class and y not in I:
-                                print("Currently running y: " + str(y))
-                                for vertex in G.vertices:
+                # print("color class chosen: " + colour_class)
+                for v in coloured_graph.vertices:
+                    if v.label == colour_class:
+                        dup_coloured_nodes.append(v)
+                for x in dup_coloured_nodes[:int(len(dup_coloured_nodes)/2)]:
+                    if x.uid not in D:
+                        # print("x selected: " + str(x.label))
+                        for y in dup_coloured_nodes[int(len(dup_coloured_nodes)/2):]:
+                            if y.uid not in I:
+                                # print("Currently running y: " + str(y))
+                                for vertex in coloured_graph.vertices:
                                     vertex.label = "1"
-                                for i in range(len(D)):
-                                    D[i].label = str(i + 2)
-                                    I[i].label = str(i + 2)
+                                    for i in range(len(D)):
+                                        if vertex.uid == D[i] or vertex.uid == I[i]:
+                                            vertex.label = str(i + 2)
                                 x.label = str(len(D) + 2)
                                 y.label = str(len(I) + 2)
-                                # with open('graph' + str(g_num_left) + 'x' + str(g_num_right) + '.dot', 'w') as gg:
-                                #     write_dot(G, gg)
-                                num = num + count_isomorphism(G, D + [x], I + [y])
-                                print(num)
+                                num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid])
+                                y.label = "1"
                         break
                 break
         return num
