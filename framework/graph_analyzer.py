@@ -79,18 +79,20 @@ def _find_identical(graphs: dict) -> List:
     return identical_graphs
 
 
-def _map_values_with_colours(labels, curr_key, colours):
+def _map_values_with_colours(labels, colours):
     for lb in labels:
         lb[0].label = lb[1]
         colours.setdefault(lb[1], []).append(lb[0])
-        colours[curr_key].remove(lb[0])
-
 
 def _check_partitions(colours):
     return len(colours.keys())
 
 
 def _update_dict(colours):
+    """
+    Remove empty lists of colours from dictionary.
+    :param colours: A dictionary of colours
+    """
     colours_copy = colours.copy()
     for key, value in colours_copy.items():
         if not value:
@@ -98,27 +100,37 @@ def _update_dict(colours):
 
 
 def _get_compressed_label(vertex):
+    """
+    Compress the label of a vertex using hash function.
+    :param vertex: A vertex with the label to be compressed
+    :return: A tuple of the vertex and the compressed label
+    """
     cl = vertex.label
     neighbours = []
     for n in vertex.neighbours:
         neighbours.append(n.label)
     neighbours = sorted(neighbours)
-    str_neighbours = cl.join(str(n) for n in neighbours)
-    hash_cl = hashlib.sha256(str_neighbours.encode())
+    str_neighbours = "".join(str(n) for n in neighbours)
+    not_hashed_label = cl + str_neighbours
+    hash_cl = hashlib.sha256(not_hashed_label.encode())
     hash_label = hash_cl.hexdigest()
     hash_label = hash_label[:8]
     return vertex, hash_label
 
 
 def _step(colours):
+    """
+    Perform one step of the Weisfeiler Lehman algorithm.
+    :param colours: A dictionary of colours
+    """
     colours_copy = colours.copy()
+    colours.clear()
+    compressed_labels = []
     for key, value in colours_copy.items():
-        if value:
-            compressed_labels = []
-            for v in value:
-                cl = _get_compressed_label(v)
-                compressed_labels.append(cl)
-            _map_values_with_colours(compressed_labels, key, colours)
+        for v in value:
+            cl = _get_compressed_label(v)
+            compressed_labels.append(cl)
+    _map_values_with_colours(compressed_labels, colours)
 
 
 def compare_graphs(graphs):
