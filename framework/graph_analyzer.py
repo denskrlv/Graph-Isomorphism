@@ -15,7 +15,6 @@ def colourize(graph: Graph, reset: bool = True) -> List:
     coloured_graph = fast_copy(graph)
     colours = {}
     graphs = {}
-    # print("RESET STATUS: " + str(reset))
     if reset:
         for v in coloured_graph.vertices:
             v.label = "1"
@@ -31,7 +30,6 @@ def colourize(graph: Graph, reset: bool = True) -> List:
         _update_dict(colours)
         new_number_of_partitions = _check_partitions(colours)
         if new_number_of_partitions == number_of_partitions:
-            # print("Colorized successfully! Iterations:", i)
             converged = True
             break
         else:
@@ -67,8 +65,6 @@ def find_discrete(identical_graphs: List, graphs: dict) -> bool:
             return True
         else:
             return False
-    # set_identical_graphs = set(tuple(row) for row in identical_graphs)  # easier to compare because the order not matter
-    # print("set: " + str(set_identical_graphs))
     return False
 
 
@@ -93,6 +89,7 @@ def _map_values_with_colours(labels, colours):
     for lb in labels:
         lb[0].label = lb[1]
         colours.setdefault(lb[1], []).append(lb[0])
+
 
 def _check_partitions(colours):
     return len(colours.keys())
@@ -143,72 +140,44 @@ def _step(colours):
     _map_values_with_colours(compressed_labels, colours)
 
 
-def compare_graphs(graphs):
-    colourings = set()
-    identical = {}
-    for key, value in graphs.items():
-        value_key = tuple(sorted(value))
-        colourings.add(value_key)
-        if value_key in identical:
-            identical[value_key].append(key)
-        else:
-            identical[value_key] = [key]
-    # output = [group for group in identical.values() if len(group) > 1]
-    if len(colourings) == 2:
-        return 0
-    if len(colourings) == 1:
-        for colouring in colourings:
-            if len(colouring) == len(tuple(set(colouring))):
-                print("bijection")
-                return 1
-            else:
-                return 2
-    return 0
-
-
 def count_isomorphism(G: Graph, D: List, I: List) -> int:
-    # colours = {"1": [v for v in G.vertices if v.label == "1"]}
-    # for v1 in D:
-    #     colours.setdefault(v1.label, []).append(v1)
-    # for v2 in I:
-    #     colours.setdefault(v2.label, []).append(v2)
-    # print("Before: " + str(G))
-    if len(D) == 0:
+    """
+    Counts the number of isomorphisms between two graphs
+    :param G: Graph (coloured)
+    :param D: List of vertices in the left graph that have previously been selected for branching
+    :param I: List of vertices in the right graph that have previously been selected for branching
+    """
+    if len(D) == 0:  # If this is the first iteration, perform colour refinement with default colouring
         result = colourize(G)
-    else:
+    else:  # If this is a branch, perform colour refinement with the assigned colouring of G
         result = colourize(G, reset=False)
-    # print("After: " + str(result))
-    if 0 in result:
+    if 0 in result:  # Result is 0 if the colouring of the graphs do not match
         return 0
-    if 1 in result:
+    if 1 in result:  # Result is 1 if the colouring of the graphs are bijective
         return 1
-    if 2 in result:
+    if 2 in result:  # Result is 2 if the colouring of the graphs are equal but not bijective. Start of Branching
         coloured_graph = result[2]
         colouring = list(result[0].values())[0]
         colour_classes = Counter(colouring)
-        # print("colours" + str(colour_classes))
         num = 0
         dup_coloured_nodes = []
         for colour_class in colour_classes:
-            if colour_classes[colour_class] >= 2:
-                # print("color class chosen: " + colour_class)
+            if colour_classes[colour_class] >= 2:  # choose a colour that have instances in both left and right graph
                 for v in coloured_graph.vertices:
                     if v.label == colour_class:
                         dup_coloured_nodes.append(v)
-                for x in dup_coloured_nodes[:int(len(dup_coloured_nodes)/2)]:
+                for x in dup_coloured_nodes[:int(len(dup_coloured_nodes)/2)]:  # choose a vertex x in the left graph to be used for branching
                     if x.uid not in D:
-                        # print("x selected: " + str(x.label))
-                        for y in dup_coloured_nodes[int(len(dup_coloured_nodes)/2):]:
+                        for y in dup_coloured_nodes[int(len(dup_coloured_nodes)/2):]:  # choose a vertex y in the right graph to be used for branching
                             if y.uid not in I:
-                                # print("Currently running y: " + str(y))
                                 for vertex in coloured_graph.vertices:
                                     vertex.label = "1"
                                     for i in range(len(D)):
                                         if vertex.uid == D[i] or vertex.uid == I[i]:
-                                            vertex.label = str(i + 2)
-                                x.label = str(len(D) + 2)
+                                            vertex.label = str(i + 2)  # assign previous chosen x's and y's a new colour
+                                x.label = str(len(D) + 2)  # assign x and y with a unique colour
                                 y.label = str(len(I) + 2)
-                                num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid])
+                                num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid])  # explore the branch by recursion
                                 y.label = "1"
                         break
                 break
