@@ -1,6 +1,7 @@
 import os
 import time
-from framework.graph_analyzer import *
+from pygraph.graph_analyzer import *
+
 
 def format_isomorphism_list(isomorphisms: list) -> List[list]:
     result = list()
@@ -51,8 +52,8 @@ def benchmark(directory):
                     v.set_uid(count)
                     count += 1
                 graph = left_graph + right_graph
-                with open('colorful' + filename + '.dot', 'w') as ff:
-                    write_dot(graph, ff)
+                # with open('colorful' + filename + '.dot', 'w') as ff:
+                #     write_dot(graph, ff)
                 count = count_isomorphism(graph, D, I)
                 print("0\t\t\t\t" + str(count))
                 end_time = time.time()
@@ -109,4 +110,4 @@ def benchmark(directory):
     print(f"Total time for all graphs: {minutes} minute(s) and {secs:.2f} seconds\n")
 
 
-benchmark("graphs/custom")
+benchmark("/Users/deniskrylov/Developer/Graph-Isomorphism/graphs/custom")

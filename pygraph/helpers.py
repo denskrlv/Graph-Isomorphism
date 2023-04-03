@@ -1,4 +1,4 @@
-from framework.graph import *
+from framework.graph import Graph, Edge
 from framework.graph_io import load_graph
 
 

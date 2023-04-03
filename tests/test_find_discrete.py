@@ -1,9 +1,6 @@
-import os
-from framework.graph import *
-from framework.graph_analyzer import *
+from pygraph.graph_analyzer import *
 import unittest
-from framework.graph_io import load_graph
-from utils.utils import load_graph_from
+from pygraph.helpers import load_graph_from
 
 
 class TestFindDiscrete(unittest.TestCase):

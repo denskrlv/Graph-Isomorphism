@@ -1,8 +1,7 @@
 import hashlib
-from copy import deepcopy
 from collections import Counter
 from framework.graph_io import *
-from utils.utils import fast_copy
+from pygraph.helpers import fast_copy
 
 
 def colourize(graph: Graph, reset: bool = True) -> List:
@@ -57,6 +56,7 @@ def colourize(graph: Graph, reset: bool = True) -> List:
 def find_discrete(identical_graphs: List, graphs: dict) -> bool:
     """
     Check which graphs are discrete.
+    :param identical_graphs: A list of lists of graphs that are identical
     :param graphs: A graph (disjoint union of graphs) that should be checked
     :return: A list of lists of graphs that are discrete
     """

@@ -1,5 +1,5 @@
 from framework.graph import *
-from framework.graph_analyzer import colourize
+from pygraph.graph_analyzer import colourize
 import unittest
 
 from framework.graph_io import load_graph, write_dot
