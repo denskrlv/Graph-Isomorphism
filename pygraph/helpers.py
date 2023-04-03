@@ -1,14 +1,17 @@
 from framework.graph import Graph, Edge
 from framework.graph_io import load_graph
+import os
 
 
 def load_graph_from(filename: str) -> Graph:
     """
     Loads a graph from a file.
-    :param filename: The name of the file
+    :param filename: The name of the file in graphs folder
     :return: The loaded graph
     """
-    with open(filename) as f:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, "..", "graphs/basic", filename)
+    with open(file_path) as f:
         loaded_graph = load_graph(f, read_list=True)
         graph = Graph(False, 0)
         i = 0
