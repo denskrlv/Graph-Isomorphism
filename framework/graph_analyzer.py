@@ -140,7 +140,7 @@ def _step(colours):
     _map_values_with_colours(compressed_labels, colours)
 
 
-def count_isomorphism(G: Graph, D: List, I: List) -> int:
+def count_isomorphism(G: Graph, D: List, I: List, count=True) -> int:
     """
     Counts the number of isomorphisms between two graphs
     :param G: Graph (coloured)
@@ -177,7 +177,9 @@ def count_isomorphism(G: Graph, D: List, I: List) -> int:
                                             vertex.label = str(i + 2)  # assign previous chosen x's and y's a new colour
                                 x.label = str(len(D) + 2)  # assign x and y with a unique colour
                                 y.label = str(len(I) + 2)
-                                num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid])  # explore the branch by recursion
+                                num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid], count=count)  # explore the branch by recursion
+                                if not count and num != 0:
+                                    return -1
                                 y.label = "1"
                         break
                 break
