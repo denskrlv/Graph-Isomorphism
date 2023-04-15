@@ -4,6 +4,101 @@ from framework.graph_io import *
 from pygraph.helpers import fast_copy
 
 
+def refine(graph: Graph, reset: bool = False) -> list:
+    """
+    Refines the graph using Hopcroft's algorithm.
+    :param graph: A graph that should be refined
+    :param reset: If True, the refinement starts from the beginning
+    :return: The refined graph
+    """
+    colours = _init_colours(graph)  # Dictionary of type: colour -> [vertices]
+    queue = set()  # Queue of colour classes to analyze
+    graphs = dict()
+
+    for colour in colours.keys():
+        queue.add(colour)
+
+    while len(queue) != 0:
+        current_class = queue.pop()
+        current_neighbours = _get_all_neighbours(colours, current_class)
+        current_colours = _get_all_neighbour_colours(current_neighbours)
+        for cc in current_colours:
+            new_candidates = colours[cc].intersection(current_neighbours)
+            new_colour = max(colours.keys())+1
+            if new_candidates != colours[cc] and len(new_candidates) != 0:
+                colours[new_colour] = new_candidates
+                for c in new_candidates:
+                    c.label = new_colour
+                colours[cc] = colours[cc] - new_candidates
+                if cc in queue:
+                    queue.add(new_colour)
+                else:
+                    if len(colours[cc]) < len(new_candidates):
+                        queue.add(cc)
+                    else:
+                        queue.add(new_colour)
+
+    for v in graph.vertices:
+        try:
+            graphs[v.g_num].append(v.label)
+        except KeyError:
+            graphs[v.g_num] = [v.label]
+
+    identical_graphs = _find_identical(graphs)
+    if not identical_graphs:
+        result = [graphs, 0, graph]
+    else:
+        if find_discrete(identical_graphs, graphs):
+            result = [graphs, 1, graph]
+        else:
+            result = [graphs, 2, graph]
+
+    return result
+
+
+def _init_colours(graph: Graph) -> dict:
+    """
+    (Only for internal use).
+    Initializes colours of the vertices of the graph according to their degree.
+    :param graph: A graph that should be refined
+    :return: The dictionary of the degrees of the vertices
+    """
+    degrees = dict()
+    for v in graph.vertices:
+        v.label = len(v.neighbours)
+        degrees.setdefault(len(v.neighbours), set()).add(v)
+    return degrees
+
+
+def _get_all_neighbours(colours: dict, colour_class: int) -> set:
+    """
+    (Only for internal use).
+    Returns all neighbours of all vertices of a current colour class.
+    :param colours: Colours dictionary
+    :param colour_class: Colour class to analyze
+    :return: The list of neighbours
+    """
+    neighbours = set()
+    for v in colours[colour_class]:
+        for n in v.neighbours:
+            neighbours.add(n)
+    return neighbours
+
+
+def _get_all_neighbour_colours(current_neighbours: set) -> set:
+    """
+    (Only for internal use).
+    Returns all colours of neighbours of a current colour class.
+    :param current_neighbours: Neighbours of a current colour class
+    :return: The set of colours
+    """
+    neighbour_colours = set()
+    for n in current_neighbours:
+        neighbour_colours.add(n.label)
+    return neighbour_colours
+
+
+# ------------------------------- NEW ALGORITHM -------------------------------
 def colourize(graph: Graph, reset: bool = True) -> List:
     """
     Colorizes the graph using Weisfeiler Lehman algorithm.
@@ -50,6 +145,10 @@ def colourize(graph: Graph, reset: bool = True) -> List:
             result = [graphs, 1, coloured_graph]
         else:
             result = [graphs, 2, coloured_graph]
+
+    with open('refined.dot', 'w') as ff:
+        write_dot(coloured_graph, ff)
+
     return result
 
 
@@ -166,9 +265,12 @@ def count_isomorphism(G: Graph, D: List, I: List, count=True) -> int:
                 for v in coloured_graph.vertices:
                     if v.label == colour_class:
                         dup_coloured_nodes.append(v)
-                for x in dup_coloured_nodes[:int(len(dup_coloured_nodes)/2)]:  # choose a vertex x in the left graph to be used for branching
+                for x in dup_coloured_nodes[:int(len(
+                        dup_coloured_nodes) / 2)]:  # choose a vertex x in the left graph to be used for branching
                     if x.uid not in D:
-                        for y in dup_coloured_nodes[int(len(dup_coloured_nodes)/2):]:  # choose a vertex y in the right graph to be used for branching
+                        for y in dup_coloured_nodes[
+                                 int(len(
+                                     dup_coloured_nodes) / 2):]:  # choose a vertex y in the right graph to be used for branching
                             if y.uid not in I:
                                 for vertex in coloured_graph.vertices:
                                     vertex.label = "1"
@@ -177,7 +279,8 @@ def count_isomorphism(G: Graph, D: List, I: List, count=True) -> int:
                                             vertex.label = str(i + 2)  # assign previous chosen x's and y's a new colour
                                 x.label = str(len(D) + 2)  # assign x and y with a unique colour
                                 y.label = str(len(I) + 2)
-                                num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid], count=count)  # explore the branch by recursion
+                                num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid],
+                                                              count=count)  # explore the branch by recursion
                                 if not count and num != 0:
                                     return -1
                                 y.label = "1"
