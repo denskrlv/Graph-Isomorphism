@@ -1,7 +1,8 @@
+import os
 import unittest
 
 from framework.graph import Graph, Vertex, Edge
-from framework.graph_io import load_graph
+from framework.graph_io import load_graph, write_dot
 from pygraph.graph_analyzer import refine, colourize
 
 
@@ -36,5 +37,32 @@ class TestRefine(unittest.TestCase):
         # assert len(refined_graph.vertices) == len(self.graph.vertices)
 
     def test_compare1(self):
-        with open("/Users/deniskrylov/Developer/Graph-Isomorphism/graphs/advanced/CrefBenchmark6.grl") as f:
-            L = load_graph(f, read_list=True)
+        directory = "/Users/deniskrylov/Developer/Graph-Isomorphism/graphs/advanced"
+        for filename in os.listdir(directory):
+            print("Dataset:", directory + "/" + filename)
+            with open(directory + "/" + filename) as f:
+                L = load_graph(f, read_list=True)
+                graph = Graph(False, 0)
+                i = 0
+                for g in L[0]:
+                    for v in g.vertices:
+                        v.g_num = i
+                    graph = graph + g
+                    i += 1
+            result = colourize(graph)
+
+    def test_compare2(self):
+        directory = "/Users/deniskrylov/Developer/Graph-Isomorphism/graphs/advanced"
+        for filename in os.listdir(directory):
+            num = 0
+            print("Dataset:", directory + "/" + filename)
+            with open(directory + "/" + filename) as f:
+                L = load_graph(f, read_list=True)
+                graph = Graph(False, 0)
+                i = 0
+                for g in L[0]:
+                    for v in g.vertices:
+                        v.g_num = i
+                    graph = graph + g
+                    i += 1
+            result = refine(graph)
