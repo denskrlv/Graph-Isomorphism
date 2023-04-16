@@ -236,8 +236,6 @@ def generate_automorphism(G: Graph, D: List, I: List):
 
         mapping = create_mapping(result[2].vertices)
         perm = permutation(len(mapping), mapping=mapping)
-        with open('test.dot', 'w') as f:
-            write_dot(result[2], f)
         if not is_member(perm, X):
             if len(perm.cycles()) > 0:
                 X.append(permutation(len(mapping), mapping=mapping))
