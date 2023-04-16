@@ -1,43 +1,50 @@
-import hashlib
-from copy import deepcopy
-from collections import Counter
-from framework.graph_io import *
-from utils.utils import fast_copy
+from framework.basicpermutationgroup import Orbit, Stabilizer, FindNonTrivialOrbit
+from framework.graph import *
+from framework.graph_io import write_dot
+from framework.permv2 import permutation
 
 
-def colourize(graph: Graph, reset: bool = True) -> List:
+def refine(graph: Graph, reset: bool = False) -> list:
     """
-    Colorizes the graph using Weisfeiler Lehman algorithm.
-    :param graph: A graph that should be (re-)colorized
-    :param reset: If True, the colours of the graph will be reset before colorization
-    :return: The colorized graph
+    Refines the graph using Hopcroft's algorithm.
+    :param graph: A graph that should be refined
+    :param reset: If True, the refinement starts from the beginning
+    :return: The refined graph
     """
-    coloured_graph = fast_copy(graph)
-    colours = {}
-    graphs = {}
+    colours = dict()
+    queue = set()  # Queue of colour classes to analyze
+    graphs = dict()
+
     if reset:
-        for v in coloured_graph.vertices:
-            v.label = "1"
-        colours["1"] = coloured_graph.vertices
+        colours = _init_colours(graph)  # Dictionary of type: colour -> [vertices]
     else:
-        for v in coloured_graph.vertices:
-            colours.setdefault(str(v.label), []).append(v)
+        for v in graph.vertices:
+            colours.setdefault(v.label, set()).add(v)
 
-    converged = False
-    number_of_partitions = _check_partitions(colours)
-    for i in range(1000):
-        _step(colours)
-        _update_dict(colours)
-        new_number_of_partitions = _check_partitions(colours)
-        if new_number_of_partitions == number_of_partitions:
-            converged = True
-            break
-        else:
-            number_of_partitions = new_number_of_partitions
-    if not converged:
-        raise TimeoutError("Limit 1000 iterations exceeded! Colorization failed.")
+    for colour in colours.keys():
+        queue.add(colour)
 
-    for v in coloured_graph.vertices:
+    while len(queue) != 0:
+        current_class = queue.pop()
+        current_neighbours = _get_all_neighbours(colours, current_class)
+        current_colours = _get_all_neighbour_colours(current_neighbours)
+        for cc in current_colours:
+            new_candidates = colours[cc].intersection(current_neighbours)
+            new_colour = max(colours.keys()) + 1
+            if new_candidates != colours[cc] and len(new_candidates) != 0:
+                colours[new_colour] = new_candidates
+                for c in new_candidates:
+                    c.label = new_colour
+                colours[cc] = colours[cc] - new_candidates
+                if cc in queue:
+                    queue.add(new_colour)
+                else:
+                    if len(colours[cc]) < len(new_candidates):
+                        queue.add(cc)
+                    else:
+                        queue.add(new_colour)
+
+    for v in graph.vertices:
         try:
             graphs[v.g_num].append(v.label)
         except KeyError:
@@ -45,13 +52,56 @@ def colourize(graph: Graph, reset: bool = True) -> List:
 
     identical_graphs = _find_identical(graphs)
     if not identical_graphs:
-        result = [graphs, 0, coloured_graph]
+        result = [graphs, 0, graph]
     else:
         if find_discrete(identical_graphs, graphs):
-            result = [graphs, 1, coloured_graph]
+            result = [graphs, 1, graph]
         else:
-            result = [graphs, 2, coloured_graph]
+            result = [graphs, 2, graph]
+
     return result
+
+
+def _init_colours(graph: Graph) -> dict:
+    """
+    (Only for internal use).
+    Initializes colours of the vertices of the graph according to their degree.
+    :param graph: A graph that should be refined
+    :return: The dictionary of the degrees of the vertices
+    """
+    degrees = dict()
+    for v in graph.vertices:
+        v.label = len(v.neighbours)
+        degrees.setdefault(len(v.neighbours), set()).add(v)
+    return degrees
+
+
+def _get_all_neighbours(colours: dict, colour_class: int) -> set:
+    """
+    (Only for internal use).
+    Returns all neighbours of all vertices of a current colour class.
+    :param colours: Colours dictionary
+    :param colour_class: Colour class to analyze
+    :return: The list of neighbours
+    """
+    neighbours = set()
+    for v in colours[colour_class]:
+        for n in v.neighbours:
+            neighbours.add(n)
+    return neighbours
+
+
+def _get_all_neighbour_colours(current_neighbours: set) -> set:
+    """
+    (Only for internal use).
+    Returns all colours of neighbours of a current colour class.
+    :param current_neighbours: Neighbours of a current colour class
+    :return: The set of colours
+    """
+    neighbour_colours = set()
+    for n in current_neighbours:
+        neighbour_colours.add(n.label)
+    return neighbour_colours
 
 
 def find_discrete(identical_graphs: List, graphs: dict) -> bool:
@@ -85,59 +135,141 @@ def _find_identical(graphs: dict) -> List:
     return identical_graphs
 
 
-def _map_values_with_colours(labels, colours):
-    for lb in labels:
-        lb[0].label = lb[1]
-        colours.setdefault(lb[1], []).append(lb[0])
+def choose_color_class(g: Graph) -> (str, List):
+    color_classes = dict()
+    max_color = None
+    for v in g.vertices:
+        try:
+            color_classes[v.label].append(v)
+        except KeyError:
+            color_classes[v.label] = [v]
+        if max_color is None and len(color_classes[v.label]) > 3:
+            max_color = v.label
+            continue
+        if max_color is not None and len(color_classes[v.label]) > len(color_classes[max_color]):
+            max_color = v.label
+
+    return color_classes[max_color]
 
 
-def _check_partitions(colours):
-    return len(colours.keys())
+def create_mapping(vertices: List[Vertex]) -> List:
+    mapping = list()
+    graph_length = int(len(vertices) / 2)
+    for v1 in vertices[:graph_length]:
+        for v2 in vertices[graph_length:]:
+            if v1.label == v2.label:
+                mapping.append(v2.uid - graph_length)
+                break
+    return mapping
 
 
-def _update_dict(colours):
+X = list()
+
+
+def factorial(n: int) -> int:
+    fact = 1
+    for i in range(1, n+1):
+        fact = fact * i
+    return fact
+
+
+def compute_stabilizer_size(stabilizer: List) -> int:
+    order = 1
+    while True:
+        if len(stabilizer) == 0:
+            return order
+        if len(stabilizer) == 1 and stabilizer[0].istrivial():
+            return order
+        vertex = FindNonTrivialOrbit(stabilizer)
+        orbit = Orbit(stabilizer, vertex)
+        stabilizer = Stabilizer(stabilizer, vertex)
+        order *= len(orbit)
+
+
+def compute_order(generators: List):
+    vertex = FindNonTrivialOrbit(generators)
+    orbit = Orbit(generators, vertex)
+    stabilizers = Stabilizer(generators, vertex)
+    size_of_stabilizer = compute_stabilizer_size(stabilizers)
+    order = len(orbit) * size_of_stabilizer
+    X.clear()
+    return order
+
+
+def is_member(perm: permutation, generators: List) -> bool:
+    vertex = FindNonTrivialOrbit(generators)
+    if vertex is None:
+        return False
+    orbit = Orbit(generators, vertex)
+    cycles = perm.cycles()
+    self_mapping = True
+    f = -1
+    for sublist in cycles:
+        if vertex in sublist:
+            self_mapping = False
+            for i in range(len(sublist)):
+                if sublist[i] == vertex:
+                    try:
+                        f = sublist[i + 1]
+                    except IndexError:
+                        f = sublist[0]
+                    break
+            break
+    member_of = f in orbit
+    return not self_mapping and member_of
+
+
+def generate_automorphism(G: Graph, D: List, I: List):
     """
-    Remove empty lists of colours from dictionary.
-    :param colours: A dictionary of colours
+    Counts the number of isomorphisms between two graphs
+    :param G: Graph (coloured)
+    :param D: List of vertices in the left graph that have previously been selected for branching
+    :param I: List of vertices in the right graph that have previously been selected for branching
     """
-    colours_copy = colours.copy()
-    for key, value in colours_copy.items():
-        if not value:
-            del colours[key]
+    if len(D) == 0:  # If this is the first iteration, perform colour refinement with default colouring
+        result = refine(G)
+    else:  # If this is a branch, perform colour refinement with the assigned colouring of G
+        result = refine(G, reset=False)
+    if 0 in result:  # Result is 0 if the colouring of the graphs do not match
+        return 0
+    if 1 in result:  # Result is 1 if the colouring of the graphs are bijective
 
-
-def _get_compressed_label(vertex):
-    """
-    Compress the label of a vertex using hash function.
-    :param vertex: A vertex with the label to be compressed
-    :return: A tuple of the vertex and the compressed label
-    """
-    cl = vertex.label
-    neighbours = []
-    for n in vertex.neighbours:
-        neighbours.append(n.label)
-    neighbours = sorted(neighbours)
-    str_neighbours = "".join(str(n) for n in neighbours)
-    not_hashed_label = cl + str_neighbours
-    hash_cl = hashlib.sha256(not_hashed_label.encode())
-    hash_label = hash_cl.hexdigest()
-    hash_label = hash_label[:16]
-    return vertex, hash_label
-
-
-def _step(colours):
-    """
-    Perform one step of the Weisfeiler Lehman algorithm.
-    :param colours: A dictionary of colours
-    """
-    colours_copy = colours.copy()
-    colours.clear()
-    compressed_labels = []
-    for key, value in colours_copy.items():
-        for v in value:
-            cl = _get_compressed_label(v)
-            compressed_labels.append(cl)
-    _map_values_with_colours(compressed_labels, colours)
+        mapping = create_mapping(result[2].vertices)
+        perm = permutation(len(mapping), mapping=mapping)
+        with open('test.dot', 'w') as f:
+            write_dot(result[2], f)
+        if not is_member(perm, X):
+            if len(perm.cycles()) > 0:
+                X.append(permutation(len(mapping), mapping=mapping))
+        return 1
+    if 2 in result:  # Result is 2 if the colouring of the graphs are equal but not bijective. Start of Branching
+        coloured_graph = result[2]
+        colour_class = choose_color_class(coloured_graph)
+        for x in colour_class[:int(len(
+                colour_class) / 2)]:  # choose a vertex x in the left graph to be used for branching
+            if x.uid not in D:
+                for y in colour_class[
+                         int(len(
+                             colour_class) / 2):]:  # choose a vertex y in the right graph to be used for branching
+                    if y.uid not in I:
+                        for vertex in coloured_graph.vertices:
+                            vertex.label = 1
+                            for i in range(len(D)):
+                                if vertex.uid == D[i] or vertex.uid == I[i]:
+                                    vertex.label = i + 2  # assign previous chosen x's and y's a new colour
+                        x.label = len(D) + 2  # assign x and y with a unique colour
+                        y.label = len(I) + 2
+                        status = generate_automorphism(coloured_graph, D + [x.uid],
+                                                       I + [y.uid])  # explore the branch by recursion
+                        y.label = 1
+                        if status == 1:
+                            length = int(len(coloured_graph.vertices) / 2)
+                            for i in range(len(D)):
+                                if D[i] != I[i] - length:
+                                    return 1
+                break
+            break
+        return 0
 
 
 def count_isomorphism(G: Graph, D: List, I: List, count=True) -> int:
@@ -148,40 +280,37 @@ def count_isomorphism(G: Graph, D: List, I: List, count=True) -> int:
     :param I: List of vertices in the right graph that have previously been selected for branching
     """
     if len(D) == 0:  # If this is the first iteration, perform colour refinement with default colouring
-        result = colourize(G)
+        result = refine(G)
     else:  # If this is a branch, perform colour refinement with the assigned colouring of G
-        result = colourize(G, reset=False)
+        result = refine(G, reset=False)
     if 0 in result:  # Result is 0 if the colouring of the graphs do not match
         return 0
     if 1 in result:  # Result is 1 if the colouring of the graphs are bijective
         return 1
     if 2 in result:  # Result is 2 if the colouring of the graphs are equal but not bijective. Start of Branching
         coloured_graph = result[2]
-        colouring = list(result[0].values())[0]
-        colour_classes = Counter(colouring)
+        colour_class = choose_color_class(coloured_graph)
         num = 0
-        dup_coloured_nodes = []
-        for colour_class in colour_classes:
-            if colour_classes[colour_class] >= 2:  # choose a colour that have instances in both left and right graph
-                for v in coloured_graph.vertices:
-                    if v.label == colour_class:
-                        dup_coloured_nodes.append(v)
-                for x in dup_coloured_nodes[:int(len(dup_coloured_nodes)/2)]:  # choose a vertex x in the left graph to be used for branching
-                    if x.uid not in D:
-                        for y in dup_coloured_nodes[int(len(dup_coloured_nodes)/2):]:  # choose a vertex y in the right graph to be used for branching
-                            if y.uid not in I:
-                                for vertex in coloured_graph.vertices:
-                                    vertex.label = "1"
-                                    for i in range(len(D)):
-                                        if vertex.uid == D[i] or vertex.uid == I[i]:
-                                            vertex.label = str(i + 2)  # assign previous chosen x's and y's a new colour
-                                x.label = str(len(D) + 2)  # assign x and y with a unique colour
-                                y.label = str(len(I) + 2)
-                                num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid], count=count)  # explore the branch by recursion
-                                if not count and num != 0:
-                                    return -1
-                                y.label = "1"
-                        break
+        for x in colour_class[:int(len(
+                colour_class) / 2)]:  # choose a vertex x in the left graph to be used for branching
+            if x.uid not in D:
+                for y in colour_class[
+                         int(len(
+                             colour_class) / 2):]:  # choose a vertex y in the right graph to be used for branching
+                    if y.uid not in I:
+                        for vertex in coloured_graph.vertices:
+                            vertex.label = 1
+                            for i in range(len(D)):
+                                if vertex.uid == D[i] or vertex.uid == I[i]:
+                                    vertex.label = i + 2  # assign previous chosen x's and y's a new colour
+                        x.label = len(D) + 2  # assign x and y with a unique colour
+                        y.label = len(I) + 2
+                        num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid],
+                                                      count=count)  # explore the branch by recursion
+                        if not count and num != 0:
+                            return -1
+                        y.label = 1
                 break
+            break
         return num
     return 0

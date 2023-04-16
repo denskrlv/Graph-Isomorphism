@@ -294,6 +294,21 @@ class Graph(object):
 
         self._v.append(vertex)
 
+    def remove_vertex(self, vertex: "Vertex"):
+        if vertex.graph != self:
+            raise GraphError("A vertex must belong to the graph it is added to")
+
+        self._v.remove(vertex)
+        for v in vertex.neighbours:
+            v.neighbours.remove(vertex)
+            for edge in v.incidence:
+                if edge.incident(vertex):
+                    v.incidence.remove(edge)
+                    self._e.remove(edge)
+                    break
+
+
+
     def add_edge(self, edge: "Edge"):
         """
         Add an edge to the graph. And if necessary also the vertices.
