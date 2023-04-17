@@ -74,24 +74,26 @@ def recolor_twins(colors_dict: dict, color_class: str) -> List:
     return twins
 
 
-def process_Aut(graph: Graph):
+def process_Aut(graphs: List):
     count = 0
-    print("Graph:\t\t\t#Aut:")
-    for v in graph.vertices:
-        v.g_num = 0
-        v.label = 1
-        v.set_uid(count)
-        count += 1
-    right_graph = fast_copy(graph)
-    for v in right_graph.vertices:
-        v.g_num = 1
-        v.label = 1
-        v.set_uid(count)
-        count += 1
-    graph = graph + right_graph
-    generate_automorphism(graph, [], [])
-    order = compute_order(X)
-    print("0\t\t\t\t" + str(order))
+    print("Graph:\t\t\tNumber of automorphisms:")
+    for i in range(len(graphs)):
+        left_graph = graphs[i]
+        for v in left_graph.vertices:
+            v.g_num = 0
+            v.label = 1
+            v.set_uid(count)
+            count += 1
+        right_graph = fast_copy(left_graph)
+        for v in right_graph.vertices:
+            v.g_num = 1
+            v.label = 1
+            v.set_uid(count)
+            count += 1
+        graph = left_graph + right_graph
+        generate_automorphism(graph, [], [])
+        order = compute_order(X)
+        print(str(i) + ":\t\t\t\t" + str(order))
 
 
 def process_GI(graphs: List, aut: bool):
@@ -99,33 +101,30 @@ def process_GI(graphs: List, aut: bool):
     equivalent = []
     automorphisms = {}
     if aut:
-        print("Equivalence classes:\t\t\t#Aut:")
+        print("Sets of isomorphic graphs:\t\t\tNumber of automorphisms:")
     else:
-        print("Equivalence classes:")
+        print("Sets of isomorphic graphs:")
     for i in range(len(graphs) - 1):
         for j in range(i + 1, len(graphs)):
             left_graph = graphs[i]
             right_graph = graphs[j]
             for v in left_graph.vertices:
-                v.g_num = i
+                v.g_num = 0
                 v.label = 1
                 v.set_uid(count)
                 count += 1
             for v in right_graph.vertices:
-                v.g_num = j
+                v.g_num = 1
                 v.label = 1
                 v.set_uid(count)
                 count += 1
             graph = left_graph + right_graph
-            if aut:
-                count = count_isomorphism(graph, [], [])
-                if count > 0:
-                    equivalent.append([i, j])
-                    automorphisms[i] = count
-            else:
-                count = count_isomorphism(graph, [], [], count=False)
-                if count < 0:
-                    equivalent.append([i, j])
+            result = check_isomorphism(graph, [], [], count=False)
+            if result < 0:
+                equivalent.append([i, j])
+                print(equivalent)
+                if aut:
+                    automorphisms[i] = get_order(left_graph)
     equivalent = format_isomorphism_list(equivalent)
     flat_equivalent = [item for sublist in equivalent for item in sublist]
     for i in range(len(graphs)):
@@ -135,11 +134,34 @@ def process_GI(graphs: List, aut: bool):
         for equivalence_class in equivalent:
             for element in equivalence_class:
                 if element in automorphisms:
-                    print(str(equivalence_class) + "\t\t\t\t\t" + str(automorphisms[element]))
+                    print(str(equivalence_class) + "\t\t\t\t\t\t" + str(automorphisms[element]))
                 break
     else:
         for equivalence_class in equivalent:
             print(equivalence_class)
+
+
+def get_order(g: Graph) -> int:
+    count = 0
+    left_graph = g
+    for v in left_graph.vertices:
+        v.g_num = 0
+        v.label = 1
+        v.set_uid(count)
+        count += 1
+    right_graph = fast_copy(left_graph)
+    for v in right_graph.vertices:
+        v.g_num = 1
+        v.label = 1
+        v.set_uid(count)
+        count += 1
+    graph = left_graph + right_graph
+    generate_automorphism(graph, [], [])
+    order = compute_order(X)
+    print("here")
+    if order > 0:
+        return order
+    return 0
 
 
 def benchmark(directory):
@@ -150,7 +172,7 @@ def benchmark(directory):
             L = load_graph(f, read_list=True)
         print("Dataset:", filename)
         if "basicAut" in filename:
-            process_Aut(L[0][0])
+            process_Aut(L[0])
         else:
             if "Aut" in filename:
                 process_GI(L[0], True)
@@ -166,4 +188,4 @@ def benchmark(directory):
     print(f"Total time for all graphs: {minutes} minute(s) and {secs:.2f} seconds\n")
 
 
-benchmark("graphs/custom")
+benchmark("graphs/test")

@@ -8,7 +8,7 @@ from framework.graph_io import load_graph, write_dot
 class TestColourize(unittest.TestCase):
 
     def setUp(self) -> None:
-        with open("/Users/deniskrylov/Developer/Graph-Isomorphism/graphs/custom/trees11.grl") as f:
+        with open("/Users/deniskrylov/Developer/Graph-Isomorphism/graphs/custom/basicAut1.grl") as f:
             L = load_graph(f, read_list=True)
             graph1 = L[0][2]
             graph2 = L[0][5]

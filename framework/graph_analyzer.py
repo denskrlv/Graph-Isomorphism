@@ -154,23 +154,27 @@ def choose_color_class(g: Graph) -> (str, List):
 
 def create_mapping(vertices: List[Vertex]) -> List:
     mapping = list()
+    mappings = dict()
     graph_length = int(len(vertices) / 2)
-    for v1 in vertices[:graph_length]:
-        for v2 in vertices[graph_length:]:
-            if v1.label == v2.label:
-                mapping.append(v2.uid - graph_length)
-                break
+    starting_id = vertices[0].uid
+    for i in range(1, graph_length + 1):
+        for v1 in vertices[:graph_length]:
+            if v1.label == i:
+                for v2 in vertices[graph_length:]:
+                    if v2.label == i:
+                        mappings[v1.uid - starting_id] = v2.uid - starting_id - graph_length
+    # for v1 in vertices[:graph_length]:
+    #     for v2 in vertices[graph_length:]:
+    #         if v1.label == v2.label:
+    #             mappings[v1.uid - starting_index] = v2.uid - starting_index - graph_length
+    #             mapping.append(v2.uid - starting_index - graph_length)
+    #             break
+    for i in range(graph_length):
+        mapping.append(mappings[i])
     return mapping
 
 
 X = list()
-
-
-def factorial(n: int) -> int:
-    fact = 1
-    for i in range(1, n+1):
-        fact = fact * i
-    return fact
 
 
 def compute_stabilizer_size(stabilizer: List) -> int:
@@ -226,6 +230,8 @@ def generate_automorphism(G: Graph, D: List, I: List):
     :param D: List of vertices in the left graph that have previously been selected for branching
     :param I: List of vertices in the right graph that have previously been selected for branching
     """
+    with open('test_before.dot', 'w') as f:
+        write_dot(G, f)
     if len(D) == 0:  # If this is the first iteration, perform colour refinement with default colouring
         result = refine(G)
     else:  # If this is a branch, perform colour refinement with the assigned colouring of G
@@ -233,7 +239,8 @@ def generate_automorphism(G: Graph, D: List, I: List):
     if 0 in result:  # Result is 0 if the colouring of the graphs do not match
         return 0
     if 1 in result:  # Result is 1 if the colouring of the graphs are bijective
-
+        with open('test.dot', 'w') as f:
+            write_dot(result[2], f)
         mapping = create_mapping(result[2].vertices)
         perm = permutation(len(mapping), mapping=mapping)
         if not is_member(perm, X):
@@ -270,7 +277,7 @@ def generate_automorphism(G: Graph, D: List, I: List):
         return 0
 
 
-def count_isomorphism(G: Graph, D: List, I: List, count=True) -> int:
+def check_isomorphism(G: Graph, D: List, I: List, count=True) -> int:
     """
     Counts the number of isomorphisms between two graphs
     :param G: Graph (coloured)
@@ -303,7 +310,7 @@ def count_isomorphism(G: Graph, D: List, I: List, count=True) -> int:
                                     vertex.label = i + 2  # assign previous chosen x's and y's a new colour
                         x.label = len(D) + 2  # assign x and y with a unique colour
                         y.label = len(I) + 2
-                        num = num + count_isomorphism(coloured_graph, D + [x.uid], I + [y.uid],
+                        num = num + check_isomorphism(coloured_graph, D + [x.uid], I + [y.uid],
                                                       count=count)  # explore the branch by recursion
                         if not count and num != 0:
                             return -1
