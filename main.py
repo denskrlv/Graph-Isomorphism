@@ -22,59 +22,7 @@ def format_isomorphism_list(isomorphisms: list) -> List[list]:
     return result
 
 
-def check_false_twins(v1: Vertex, v2: Vertex) -> bool:
-    if v1.is_adjacent(v2):
-        return False
-    if len(v1.neighbours) != len(v2.neighbours):
-        return False
-    if len(v1.neighbours) != len(set(v1.neighbours + v2.neighbours)):
-        return False
-    return True
-
-
-def check_twins(v1: Vertex, v2: Vertex) -> bool:
-    if not v1.is_adjacent(v2):
-        return False
-    if len(v1.neighbours) != len(v2.neighbours):
-        return False
-    v1_neighbours = list(v1.neighbours)
-    v2_neighbours = list(v2.neighbours)
-    v1_neighbours.remove(v2)
-    v2_neighbours.remove(v1)
-    if len(v1_neighbours) != len(set(v1_neighbours + v2_neighbours)):
-        return False
-    return True
-
-
-def recolor_twins(colors_dict: dict, color_class: str) -> List:
-    twins = list()
-    count = 2
-    for color in colors_dict:
-        if color == color_class:
-            continue
-        if len(colors_dict[color]) >= 4:
-            vertices = colors_dict[color]
-            for i in range(int(len(vertices) / 2) - 1):
-                for j in range(1, int(len(vertices) / 2)):
-                    if check_false_twins(vertices[i], vertices[j]) or check_twins(vertices[i], vertices[j]):
-                        vertices[i].label = str(count)
-                        # vertices[j].label = str(count + 1)
-                        mid = int(len(vertices) / 2)
-                        vertices[mid + i].label = str(count)
-                        # vertices[mid + j].label = str(count + 1)
-                        count += 1
-                        twins.append(vertices[i].uid)
-                        twins.append(vertices[j].uid)
-                        twins.append(vertices[mid + i].uid)
-                        twins.append(vertices[mid + j].uid)
-            # if check_false_twins(vertices[0], vertices[1]) or check_twins(vertices[0], vertices[1]):
-            #     vertices[1].label = str(count)
-            #     vertices[3].label = str(count)
-            #     count += 1
-    return twins
-
-
-def process_Aut(graphs: List):
+def process_aut(graphs: List):
     count = 0
     print("Graph:\t\t\tNumber of automorphisms:")
     for i in range(len(graphs)):
@@ -96,7 +44,7 @@ def process_Aut(graphs: List):
         print(str(i) + ":\t\t\t\t" + str(order))
 
 
-def process_GI(graphs: List, aut: bool):
+def process_gi(graphs: List, aut: bool):
     count = 0
     equivalent = []
     automorphisms = {}
@@ -125,6 +73,18 @@ def process_GI(graphs: List, aut: bool):
                 if aut:
                     automorphisms[i] = get_order(left_graph)
     equivalent = format_isomorphism_list(equivalent)
+    if aut:
+        for i in range(len(graphs)):
+            found = False
+            for pair in equivalent:
+                if i in pair:
+                    found = True
+                    break
+            if not found:
+                equivalent.append([i])
+                left_graph = graphs[i]
+                order = get_order(left_graph)
+                automorphisms[i] = order
     flat_equivalent = [item for sublist in equivalent for item in sublist]
     for i in range(len(graphs)):
         if i not in flat_equivalent:
@@ -169,13 +129,13 @@ def benchmark(directory):
         with open(directory + "/" + filename) as f:
             L = load_graph(f, read_list=True)
         print("Dataset:", filename)
-        if "basicAut" in filename:
-            process_Aut(L[0])
+        if "Aut" in filename and "GI" not in filename:
+            process_aut(L[0])
         else:
-            if "Aut" in filename:
-                process_GI(L[0], True)
+            if "GIAut" in filename:
+                process_gi(L[0], True)
             else:
-                process_GI(L[0], False)
+                process_gi(L[0], False)
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Elapsed time: {elapsed_time:.3f} seconds\n")
@@ -186,4 +146,4 @@ def benchmark(directory):
     print(f"Total time for all graphs: {minutes} minute(s) and {secs:.2f} seconds\n")
 
 
-benchmark("graphs/custom")
+benchmark("graphs/delivery")
