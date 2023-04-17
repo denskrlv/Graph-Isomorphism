@@ -1,6 +1,5 @@
 from framework.basicpermutationgroup import Orbit, Stabilizer, FindNonTrivialOrbit
 from framework.graph import *
-from framework.graph_io import write_dot
 from framework.permv2 import permutation
 
 
@@ -230,8 +229,6 @@ def generate_automorphism(G: Graph, D: List, I: List):
     :param D: List of vertices in the left graph that have previously been selected for branching
     :param I: List of vertices in the right graph that have previously been selected for branching
     """
-    with open('test_before.dot', 'w') as f:
-        write_dot(G, f)
     if len(D) == 0:  # If this is the first iteration, perform colour refinement with default colouring
         result = refine(G)
     else:  # If this is a branch, perform colour refinement with the assigned colouring of G
@@ -239,8 +236,6 @@ def generate_automorphism(G: Graph, D: List, I: List):
     if 0 in result:  # Result is 0 if the colouring of the graphs do not match
         return 0
     if 1 in result:  # Result is 1 if the colouring of the graphs are bijective
-        with open('test.dot', 'w') as f:
-            write_dot(result[2], f)
         mapping = create_mapping(result[2].vertices)
         perm = permutation(len(mapping), mapping=mapping)
         if not is_member(perm, X):
