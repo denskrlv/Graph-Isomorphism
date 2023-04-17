@@ -146,4 +146,4 @@ def benchmark(directory):
     print(f"Total time for all graphs: {minutes} minute(s) and {secs:.2f} seconds\n")
 
 
-benchmark("graphs/delivery")
+benchmark("graphs")
