@@ -354,52 +354,6 @@ class Graph(object):
         return new_graph
 
 
-    # def __add__(self, other: "Graph") -> "Graph":
-    #     """
-    #     Make a disjoint union of two graphs.
-    #     :param other: Graph to add to `self'.
-    #     :return: New graph which is a disjoint union of `self' and `other'.
-    #     """
-    #     v_self = self.vertices
-    #     v_other = other.vertices
-    #     vertices_dict = {}
-    #     length = len(self) + len(other)
-    #     # for graph in other:
-    #     #     vertices = graph.vertices
-    #     #     length = length + len(vertices)
-    #     g = Graph(False, length)
-    #
-    #     count = 0
-    #     for v1 in v_self:
-    #         vertices_dict[v1] = g.vertices[count]
-    #         count = count + 1
-    #
-    #     for v2 in v_other:
-    #         vertices_dict[v2] = g.vertices[count]
-    #
-    #     for e1 in self.edges:
-    #         head = e1.head
-    #         tail = e1.tail
-    #         new_edge = Edge(vertices_dict[head], vertices_dict[tail])
-    #         g.add_edge(new_edge)
-    #
-    #     for e2 in other.edges:
-    #         head = e2.head
-    #         tail = e2.tail
-    #         new_edge = Edge(vertices_dict[head], vertices_dict[tail])
-    #         g.add_edge(new_edge)
-        # for graph in other:
-        #     for v in graph.vertices:
-        #         vertices_dict[v] = g.vertices[count]
-        #         count = count + 1
-        #     for e in graph.edges:
-        #         head = e.head
-        #         tail = e.tail
-        #         new_edge = Edge(vertices_dict[head], vertices_dict[tail])
-        #         g.add_edge(new_edge)
-
-        # return g
-
     def __iadd__(self, other: Union[Edge, Vertex]) -> "Graph":
         """
         Add either an `Edge` or `Vertex` with the += syntax.
