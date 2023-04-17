@@ -122,7 +122,6 @@ def process_GI(graphs: List, aut: bool):
             result = check_isomorphism(graph, [], [], count=False)
             if result < 0:
                 equivalent.append([i, j])
-                print(equivalent)
                 if aut:
                     automorphisms[i] = get_order(left_graph)
     equivalent = format_isomorphism_list(equivalent)
@@ -158,7 +157,6 @@ def get_order(g: Graph) -> int:
     graph = left_graph + right_graph
     generate_automorphism(graph, [], [])
     order = compute_order(X)
-    print("here")
     if order > 0:
         return order
     return 0
@@ -188,4 +186,4 @@ def benchmark(directory):
     print(f"Total time for all graphs: {minutes} minute(s) and {secs:.2f} seconds\n")
 
 
-benchmark("graphs/test")
+benchmark("graphs/custom")
