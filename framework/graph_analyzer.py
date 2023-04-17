@@ -162,12 +162,6 @@ def create_mapping(vertices: List[Vertex]) -> List:
                 for v2 in vertices[graph_length:]:
                     if v2.label == i:
                         mappings[v1.uid - starting_id] = v2.uid - starting_id - graph_length
-    # for v1 in vertices[:graph_length]:
-    #     for v2 in vertices[graph_length:]:
-    #         if v1.label == v2.label:
-    #             mappings[v1.uid - starting_index] = v2.uid - starting_index - graph_length
-    #             mapping.append(v2.uid - starting_index - graph_length)
-    #             break
     for i in range(graph_length):
         mapping.append(mappings[i])
     return mapping
